@@ -9,8 +9,33 @@ from openpyxl.styles import Font,PatternFill,Alignment
 from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title='OBE Evaluation Report Generator',layout='wide')
+st.set_page_config(page_title='OBE Evaluation Report Generator',page_icon='📊',layout='wide',initial_sidebar_state='expanded')
 BENCHMARK=70.0
+
+# --- Professional dashboard styling ---
+st.markdown("""
+<style>
+.main {background:#f7f9fc;}
+.block-container {padding-top:1.5rem; padding-bottom:2rem;}
+.obe-hero {
+ padding:1.35rem 1.6rem; border-radius:16px; margin-bottom:1.2rem;
+ background:linear-gradient(135deg,#163a5f 0%,#285f8f 100%); color:white;
+}
+.obe-hero h1 {margin:0; font-size:2rem;}
+.obe-hero p {margin:.4rem 0 0; opacity:.95;}
+div[data-testid="stMetric"] {
+ background:white; border:1px solid #dfe6ee; border-radius:12px; padding:10px;
+}
+.stButton>button {border-radius:9px; font-weight:600;}
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+<div class="obe-hero">
+<h1>📊 OBE Evaluation Report Generator</h1>
+<p>Automated, auditable CLO attainment analysis, assessment evidence, CQI planning and accreditation-ready reporting.</p>
+</div>
+""", unsafe_allow_html=True)
+
 
 def clean(v):
     if pd.isna(v): return ''
@@ -128,388 +153,157 @@ def report(info,objectives,clos,assessments,stats,overall,gtot,student_df,chart_
     doc.add_heading('13. OBE Quality Check',1); table(['Check','Result'],[['Students analyzed',overall['n']],['Overall attainment',f'{gtot:.2f}%'],['Strongest CLO',strong],['Weakest CLO',weak],['CLOs ≥70%',sum(stats[c]['mean']>=70 for c in clos)],['CLOs <70%',sum(stats[c]['mean']<70 for c in clos)],['Assessments analyzed',len(assessments)],['CLOs matched',sum(1 for c in clos if any(a['clo']==c for a in assessments))],['Calculations internally consistent','Yes; all tables/charts use the same analysis.']])
     doc.save(out)
 
-
-# -------------------- PROFESSIONAL OBE DASHBOARD UI --------------------
+# Missing import used only for paragraph alignment
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-st.set_page_config(
-    page_title="OBE Evaluation Report Generator",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-st.markdown("""
-<style>
-    .stApp { background: #ffffff; }
-    [data-testid="stSidebar"] {
-        background: #f1f4f8;
-        border-right: 1px solid #e1e6ed;
-    }
-    [data-testid="stSidebar"] .block-container { padding-top: 2.2rem; }
-    .hero {
-        padding: 8px 0 22px 0;
-    }
-    .hero h1 {
-        font-size: 2.55rem;
-        line-height: 1.15;
-        margin: 0;
-        color: #202433;
-        font-weight: 750;
-    }
-    .hero p {
-        color: #8a8f99;
-        font-size: 1rem;
-        margin-top: 12px;
-    }
-    .section-title {
-        font-size: 1.9rem;
-        font-weight: 700;
-        color: #172f4d;
-        margin: 28px 0 14px 0;
-    }
-    .section-subtitle {
-        color: #6f7782;
-        margin-top: -8px;
-        margin-bottom: 18px;
-    }
-    .settings-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 18px;
-        color: #202433;
-    }
-    .info-card {
-        background: #f5f7fa;
-        border-radius: 9px;
-        padding: 13px 15px;
-        min-height: 66px;
-        border: 1px solid #e5e9ef;
-    }
-    .info-label {
-        color: #66717f;
-        font-size: .82rem;
-        margin-bottom: 5px;
-    }
-    .info-value {
-        color: #273142;
-        font-size: .96rem;
-        font-weight: 500;
-    }
-    .metric-card {
-        background: white;
-        border: 1px solid #e2e7ee;
-        border-radius: 12px;
-        padding: 14px;
-    }
-    div[data-testid="stFileUploader"] {
-        border-radius: 10px;
-    }
-    .small-note {
-        color: #737b86;
-        font-size: .86rem;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 with st.sidebar:
-    st.markdown('<div class="settings-title">Report Settings</div>', unsafe_allow_html=True)
-
-    method = st.selectbox(
-        "CLO attainment method",
-        ["Direct student-threshold attainment", "Mean attainment"],
-        index=0
-    )
-
-    benchmark = st.number_input(
-        "Achievement threshold (%)",
-        min_value=0.0, max_value=100.0, value=70.0, step=1.0
-    )
-    BENCHMARK = float(benchmark)
-
-    target = st.number_input(
-        "Target CLO attainment (%)",
-        min_value=0.0, max_value=100.0, value=70.0, step=1.0
-    )
-
+    st.header("⚙️ OBE Controls")
+    BENCHMARK = st.number_input("OBE benchmark (%)", 0.0, 100.0, 70.0, 1.0)
     st.divider()
-    st.markdown("**Status rules**")
-    st.caption("≥80% = Strong")
-    st.caption("70–79.99% = Satisfactory")
-    st.caption("<70% = Needs Improvement")
+    st.markdown("### Source hierarchy")
+    st.info("Course Outline → official course information and exact CLO wording.\n\nExcel → numerical OBE evidence, marks, assessment results and mappings.")
+    st.markdown("### Status rules")
+    st.write("**≥80%** — Strong")
+    st.write("**70–79.99%** — Satisfactory")
+    st.write("**<70%** — Needs Improvement")
 
-st.markdown("""
-<div class="hero">
-    <h1>📊 OBE Evaluation Report Generator</h1>
-    <p>Generate an auditable Course Learning Outcome (CLO) attainment report from assessment data.</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ---------- SECTION 1 ----------
-st.markdown('<div class="section-title">1. Course Information</div>', unsafe_allow_html=True)
-
-outline = st.file_uploader(
-    "Upload Course Outline",
-    type=["docx"],
-    key="outline",
-    label_visibility="collapsed"
-)
-
-# Keep Excel uploader immediately available but visually subordinate.
-excel = st.file_uploader(
-    "Upload OBE Assessment Excel",
-    type=["xlsx"],
-    key="excel",
-    label_visibility="collapsed"
-)
-
-if outline:
-    try:
-        info, objectives, clos = parse_outline(outline.getvalue())
-    except Exception:
-        info = {k: "" for k in ['Course Code','Course Title','Credit Hours','Program','Semester','Campus','Instructor/Faculty','Course Description']}
-        objectives, clos = [], {}
-else:
-    info = {k: "" for k in ['Course Code','Course Title','Credit Hours','Program','Semester','Campus','Instructor/Faculty','Course Description']}
-    objectives, clos = [], {}
-
-# Academic Year is intentionally not inferred.
-course_fields = [
-    ("Institution", "Not available in the provided files."),
-    ("Department", "Not available in the provided files."),
-    ("Program", info.get("Program") or "Not available in the provided files."),
-    ("Course Title", info.get("Course Title") or "Not available in the provided files."),
-    ("Course Code", info.get("Course Code") or "Not available in the provided files."),
-    ("Semester", info.get("Semester") or "Not available in the provided files."),
-    ("Academic Year", "Not available in the provided files."),
-    ("Course Teacher / Instructor", info.get("Instructor/Faculty") or "Not available in the provided files."),
-    ("Credit Hours", info.get("Credit Hours") or "Not available in the provided files."),
-]
-
-for start in range(0, len(course_fields), 3):
-    cols = st.columns(3)
-    for col, (label, value) in zip(cols, course_fields[start:start+3]):
-        with col:
-            st.markdown(
-                f'<div class="info-card"><div class="info-label">{label}</div>'
-                f'<div class="info-value">{value}</div></div>',
-                unsafe_allow_html=True
-            )
-
-# ---------- SECTION 2 ----------
-st.markdown('<div class="section-title">2. Course Learning Outcomes</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="section-subtitle">Official CLO wording is taken from the uploaded Course Outline and is not paraphrased.</div>',
-    unsafe_allow_html=True
-)
-
-if clos:
-    clo_df = pd.DataFrame({
-        "CLO": list(clos.keys()),
-        "CLO Description": list(clos.values())
-    })
-    st.dataframe(clo_df, use_container_width=True, hide_index=True)
-else:
-    st.info("Upload the Course Outline to display the official CLOs.")
-
-# ---------- SECTION 3 ----------
-st.markdown('<div class="section-title">3. Student Assessment Data</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="section-subtitle">Upload the OBE Excel workbook containing assessment marks, CLO mappings and attainment evidence.</div>',
-    unsafe_allow_html=True
-)
-
-if not outline or not excel:
-    st.info("Please upload both the Course Outline (.docx) and OBE Assessment Excel (.xlsx) to generate the full report.")
+st.subheader("📁 Upload OBE Evidence")
+c1, c2 = st.columns(2)
+with c1:
+    outline = st.file_uploader("1. Course Outline (.docx)", type=["docx"])
+with c2:
+    excel = st.file_uploader("2. OBE Assessment Excel (.xlsx)", type=["xlsx"])
 
 if outline and excel:
     try:
-        # Re-parse to ensure the analysis uses the current files.
         info, objectives, clos = parse_outline(outline.getvalue())
         raw = pd.read_excel(io.BytesIO(excel.getvalue()), sheet_name='OBE', header=None)
-
         assessments, stats, overall, gtot, rows, pct_cols, total_col = analyze(raw, clos)
 
-        st.success("✓ Both source files have been loaded and analyzed.")
+        st.success("✓ Course Outline and OBE Excel successfully loaded.")
 
-        # Assessment overview
-        ac = st.columns(4)
-        ac[0].metric("Students Assessed", overall["n"])
-        ac[1].metric("Assessments", len(assessments))
-        ac[2].metric("Overall CLO Attainment", f"{gtot:.2f}%" if not pd.isna(gtot) else "N/A")
-        ac[3].metric(
-            f"Students ≥{benchmark:.0f}%",
-            f"{overall['benchmark_pct']:.1f}%"
-        )
+        st.subheader("📘 Course Overview")
+        mc = st.columns(5)
+        for col, label, value in [
+            (mc[0],"Course Code",info["Course Code"] or "Not available"),
+            (mc[1],"Course Title",info["Course Title"] or "Not available"),
+            (mc[2],"Program",info["Program"] or "Not available"),
+            (mc[3],"Semester",info["Semester"] or "Not available"),
+            (mc[4],"Students",overall["n"])
+        ]:
+            col.metric(label, value)
 
-        # ---------- SECTION 4 ----------
-        st.markdown('<div class="section-title">4. CLO-wise OBE Attainment</div>', unsafe_allow_html=True)
+        with st.expander("📚 Official CLOs", expanded=True):
+            st.dataframe(pd.DataFrame({"CLO":list(clos),"Official CLO":list(clos.values())}),
+                         use_container_width=True, hide_index=True)
+
+        st.subheader("📊 CLO Attainment Summary")
         result_df = pd.DataFrame([
-            {
-                "CLO": c,
-                "CLO Description": clos[c],
-                "Mean Attainment (%)": stats[c]["mean"],
-                f"Students ≥{benchmark:.0f}%": stats[c]["n70"],
-                f"Students ≥{benchmark:.0f}% (%)": stats[c]["pct70"],
-                "Standard Deviation": stats[c]["sd"],
-                "Status": status(stats[c]["mean"])
-            }
+            {"CLO":c,"Official CLO":clos[c],"Mean Attainment (%)":stats[c]["mean"],
+             "Students ≥70%":stats[c]["n70"],"Students ≥70% (%)":stats[c]["pct70"],
+             "SD":stats[c]["sd"],"Status":status(stats[c]["mean"])}
             for c in clos
         ])
-        st.dataframe(result_df, use_container_width=True, hide_index=True)
+        st.dataframe(result_df,use_container_width=True,hide_index=True)
 
-        valid = {c: stats[c]["mean"] for c in clos if not pd.isna(stats[c]["mean"])}
-        strongest = max(valid, key=valid.get) if valid else "Not available"
-        weakest = min(valid, key=valid.get) if valid else "Not available"
-        above = sum(v >= benchmark for v in valid.values())
-        below = sum(v < benchmark for v in valid.values())
+        valid={c:stats[c]["mean"] for c in clos if not pd.isna(stats[c]["mean"])}
+        strongest=max(valid,key=valid.get) if valid else "N/A"
+        weakest=min(valid,key=valid.get) if valid else "N/A"
+        mm=st.columns(5)
+        mm[0].metric("Overall Attainment",f"{gtot:.2f}%" if not pd.isna(gtot) else "N/A")
+        mm[1].metric("Strongest CLO",strongest)
+        mm[2].metric("Weakest CLO",weakest)
+        mm[3].metric("CLOs ≥70%",sum(v>=70 for v in valid.values()))
+        mm[4].metric("CLOs <70%",sum(v<70 for v in valid.values()))
 
-        st.markdown('<div class="section-title">5. Visual OBE Evidence</div>', unsafe_allow_html=True)
-        outdir = Path("obe_output")
-        outdir.mkdir(exist_ok=True)
-        chart_paths = charts(stats, assessments, outdir)
+        st.subheader("📈 Visual OBE Evidence")
+        out=Path("obe_output"); out.mkdir(exist_ok=True)
+        cp=charts(stats,assessments,out)
+        ch1,ch2=st.columns(2)
+        with ch1: st.image(str(cp[0]),use_container_width=True)
+        with ch2: st.image(str(cp[1]),use_container_width=True)
+        st.image(str(cp[2]),use_container_width=True)
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.image(str(chart_paths[0]), use_container_width=True)
-        with c2:
-            st.image(str(chart_paths[1]), use_container_width=True)
-        st.image(str(chart_paths[2]), use_container_width=True)
-
-        # ---------- SECTION 6 ----------
-        st.markdown('<div class="section-title">6. Assessment-to-CLO Mapping</div>', unsafe_allow_html=True)
-        mapping_df = pd.DataFrame([
-            {
-                "CLO": a["clo"],
-                "Assessment/Question": a["label"],
-                "Maximum Marks": "Not available in the provided files.",
-                "Average/Mean Score": a["average"],
-                "Attainment %": "Not available in the provided files.",
-                "Interpretation": "Maximum marks are not separately available; attainment percentage is not inferred."
-            }
+        st.subheader("📝 Assessment-wise Analysis")
+        adf=pd.DataFrame([
+            {"CLO":a["clo"],"Assessment/Question":a["label"],"Weightage":a["weightage"],
+             "Average/Mean Score":a["average"],
+             "Maximum Marks":"Not available in the provided files.",
+             "Attainment %":"Not available in the provided files.",
+             "Interpretation":"Raw maximum marks are not separately available; normalized attainment is not inferred."}
             for a in assessments
         ])
-        st.dataframe(mapping_df, use_container_width=True, hide_index=True)
+        st.dataframe(adf,use_container_width=True,hide_index=True)
 
-        # ---------- SECTION 7 ----------
-        st.markdown('<div class="section-title">7. Student Performance Analysis</div>', unsafe_allow_html=True)
-        sp = st.columns(6)
-        sp[0].metric("N", overall["n"])
-        sp[1].metric("Highest", f"{overall['highest']:.2f}")
-        sp[2].metric("Lowest", f"{overall['lowest']:.2f}")
-        sp[3].metric("Mean", f"{overall['mean']:.2f}")
-        sp[4].metric("Median", f"{overall['median']:.2f}")
-        sp[5].metric("SD", f"{overall['sd']:.2f}")
+        st.subheader("👥 Student Performance")
+        sp=st.columns(6)
+        for col,label,value in [
+            (sp[0],"N",overall["n"]),
+            (sp[1],"Highest",f'{overall["highest"]:.2f}'),
+            (sp[2],"Lowest",f'{overall["lowest"]:.2f}'),
+            (sp[3],"Mean",f'{overall["mean"]:.2f}'),
+            (sp[4],"Median",f'{overall["median"]:.2f}'),
+            (sp[5],"SD",f'{overall["sd"]:.2f}')
+        ]: col.metric(label,value)
+        st.write(f"**Overall students meeting the {BENCHMARK:.0f}% benchmark:** {overall['benchmark_pct']:.1f}%")
 
-        # ---------- SECTION 8 ----------
-        st.markdown('<div class="section-title">8. CLO Alignment with Course Outline</div>', unsafe_allow_html=True)
-        alignment_df = pd.DataFrame([
-            {
-                "CLO": c,
-                "Official CLO": clos[c],
-                "Assessment Evidence": "; ".join(
-                    a["label"] for a in assessments if a["clo"] == c
-                ) or "No assessment evidence for this CLO was identified in the provided Excel file.",
-                "Attainment %": stats[c]["mean"],
-                "Benchmark Achievement %": stats[c]["pct70"],
-                "Status": status(stats[c]["mean"]),
-                "CQI Priority": "High" if not pd.isna(stats[c]["mean"]) and stats[c]["mean"] < benchmark else "Maintain"
-            }
+        st.subheader("🔗 CLO Alignment with Course Outline")
+        align=pd.DataFrame([
+            {"CLO":c,"Official CLO":clos[c],
+             "Assessment Evidence":"; ".join(a["label"] for a in assessments if a["clo"]==c) or
+                 "No assessment evidence for this CLO was identified in the provided Excel file.",
+             "Attainment %":stats[c]["mean"],"Benchmark Achievement %":stats[c]["pct70"],
+             "Status":status(stats[c]["mean"]),
+             "CQI Priority":"High" if not pd.isna(stats[c]["mean"]) and stats[c]["mean"]<70 else "Maintain"}
             for c in clos
         ])
-        st.dataframe(alignment_df, use_container_width=True, hide_index=True)
+        st.dataframe(align,use_container_width=True,hide_index=True)
 
-        # ---------- SECTION 9 ----------
-        st.markdown('<div class="section-title">9. CQI Action Plan</div>', unsafe_allow_html=True)
-        cqi_rows = []
+        st.subheader("🛠️ CQI Action Plan")
+        cqi=[]
         for c in clos:
-            if not pd.isna(stats[c]["mean"]) and stats[c]["mean"] < benchmark:
-                cqi_rows.append({
-                    "CLO/Area": c,
-                    "Identified Issue": f"Mean attainment = {stats[c]['mean']:.2f}%, below the {benchmark:.0f}% benchmark.",
-                    "Recommended Action": f"Focus improvement directly on the official CLO: {clos[c]}",
-                    "Teaching/Learning Intervention": "Provide targeted CLO-aligned practice, formative assessment and structured feedback.",
-                    "Follow-up Evidence": "Repeat a CLO-aligned assessment and compare subsequent attainment.",
-                    "Target": f"Mean attainment ≥{target:.0f}%."
-                })
+            if not pd.isna(stats[c]["mean"]) and stats[c]["mean"]<70:
+                cqi.append({"CLO/Area":c,"Identified Issue":f"Mean attainment = {stats[c]['mean']:.2f}%, below 70%.",
+                            "Recommended Action":f"Focus directly on the official CLO: {clos[c]}",
+                            "Teaching/Learning Intervention":"Targeted practice, formative assessment and feedback tied to the CLO.",
+                            "Follow-up Evidence":"Repeat CLO-aligned assessment and compare attainment.",
+                            "Target":"Mean attainment ≥70%."})
+        if cqi: st.dataframe(pd.DataFrame(cqi),use_container_width=True,hide_index=True)
+        else: st.success("No CLO below the 70% benchmark was identified from the available attainment data.")
 
-        if cqi_rows:
-            st.dataframe(pd.DataFrame(cqi_rows), use_container_width=True, hide_index=True)
-        else:
-            st.success(f"No CLO below the {benchmark:.0f}% benchmark was identified.")
+        st.subheader("📥 Downloadable OBE Outputs")
+        sdf=pd.DataFrame({"Sr.":range(1,overall["n"]+1),
+                          "Roll No.":[clean(raw.iloc[r,2]) for r in rows],
+                          "Section":[clean(raw.iloc[r,3]) for r in rows]})
+        for c in clos: sdf[c+" Attainment %"]=[num(raw.iloc[r,pct_cols[c]]) for r in rows]
+        sdf["Overall Score"]=[num(raw.iloc[r,total_col]) for r in rows]
+        x=out/"OBE_Analysis.xlsx"; d=out/"OBE_Evaluation_Report.docx"
+        workbook(clos,assessments,stats,overall,sdf,x)
+        report(info,objectives,clos,assessments,stats,overall,gtot,sdf,cp,d)
 
-        # ---------- SECTION 10 ----------
-        st.markdown('<div class="section-title">10. Executive OBE Summary</div>', unsafe_allow_html=True)
-        summary_cols = st.columns(4)
-        summary_cols[0].metric("Strongest CLO", strongest)
-        summary_cols[1].metric("Weakest CLO", weakest)
-        summary_cols[2].metric(f"CLOs ≥{benchmark:.0f}%", above)
-        summary_cols[3].metric(f"CLOs <{benchmark:.0f}%", below)
-
-        st.markdown(
-            f"""
-            **Overall interpretation:** Overall CLO attainment is
-            **{gtot:.2f}%** based on the Excel evidence.
-            The strongest CLO is **{strongest}** and the weakest is **{weakest}**.
-            **{above}** CLO(s) meet or exceed the selected benchmark of
-            **{benchmark:.0f}%**, while **{below}** CLO(s) fall below it.
-            """,
-        )
-
-        # ---------- OUTPUTS ----------
-        st.markdown('<div class="section-title">11. Download OBE Outputs</div>', unsafe_allow_html=True)
-
-        sdf = pd.DataFrame({
-            "Sr.": range(1, overall["n"] + 1),
-            "Roll No.": [clean(raw.iloc[r, 2]) for r in rows],
-            "Section": [clean(raw.iloc[r, 3]) for r in rows],
-        })
-        for c in clos:
-            sdf[c + " Attainment %"] = [num(raw.iloc[r, pct_cols[c]]) for r in rows]
-        sdf["Overall Score"] = [num(raw.iloc[r, total_col]) for r in rows]
-
-        xlsx_path = outdir / "OBE_Analysis.xlsx"
-        docx_path = outdir / "OBE_Evaluation_Report.docx"
-        workbook(clos, assessments, stats, overall, sdf, xlsx_path)
-        report(info, objectives, clos, assessments, stats, overall, gtot, sdf, chart_paths, docx_path)
-
-        dl = st.columns(5)
-        with dl[0]:
-            st.download_button("📄 Word Report", docx_path.read_bytes(),
-                               "OBE_Evaluation_Report.docx",
-                               mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                               use_container_width=True)
-        with dl[1]:
-            st.download_button("📊 Excel Workbook", xlsx_path.read_bytes(),
-                               "OBE_Analysis.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                               use_container_width=True)
-        for col, p in zip(dl[2:], chart_paths):
+        b1,b2=st.columns(2)
+        with b1: st.download_button("📄 Download Word Report",d.read_bytes(),"OBE_Evaluation_Report.docx",use_container_width=True)
+        with b2: st.download_button("📊 Download Excel Workbook",x.read_bytes(),"OBE_Analysis.xlsx",use_container_width=True)
+        for col,p in zip(st.columns(3),cp):
             with col:
-                st.download_button(
-                    f"🖼️ {p.stem}",
-                    p.read_bytes(),
-                    p.name,
-                    mime="image/png",
-                    use_container_width=True
-                )
+                st.download_button(f"Download {p.name}",p.read_bytes(),p.name,mime="image/png",use_container_width=True)
 
-        # ---------- QUALITY CHECK ----------
         with st.expander("🔎 Final OBE Quality Check"):
-            matched = sum(1 for c in clos if any(a["clo"] == c for a in assessments))
-            qc = pd.DataFrame([
-                ["Students analyzed", overall["n"]],
-                ["Overall CLO attainment", f"{gtot:.2f}%" if not pd.isna(gtot) else "Not available"],
-                ["Strongest CLO", strongest],
-                ["Weakest CLO", weakest],
-                [f"CLOs ≥{benchmark:.0f}%", above],
-                [f"CLOs <{benchmark:.0f}%", below],
-                ["Assessments analyzed", len(assessments)],
-                ["CLOs successfully matched", matched],
-                ["Internal consistency", "Yes; dashboard, workbook and report use the same underlying calculations."]
-            ], columns=["Quality Check", "Result"])
-            st.dataframe(qc, use_container_width=True, hide_index=True)
+            matched=sum(1 for c in clos if any(a["clo"]==c for a in assessments))
+            qc=pd.DataFrame([
+                ["Students analyzed",overall["n"]],
+                ["Overall CLO attainment",f"{gtot:.2f}%" if not pd.isna(gtot) else "Not available"],
+                ["Strongest CLO",strongest],["Weakest CLO",weakest],
+                ["CLOs ≥70%",sum(v>=70 for v in valid.values())],
+                ["CLOs <70%",sum(v<70 for v in valid.values())],
+                ["Assessments analyzed",len(assessments)],
+                ["CLOs successfully matched",matched],
+                ["Internal consistency","Yes; dashboard, workbook and report use the same analysis."]
+            ],columns=["Check","Result"])
+            st.dataframe(qc,use_container_width=True,hide_index=True)
 
     except Exception as e:
         st.error("The uploaded files could not be processed.")
         st.exception(e)
+else:
+    st.info("Upload both files above to begin the OBE analysis.")
