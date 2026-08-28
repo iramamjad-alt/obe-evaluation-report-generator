@@ -1,0 +1,31 @@
+OBE EVALUATION REPORT – MASTER PROMPT
+
+Analyze the uploaded Course Outline and OBE Excel workbook together.
+
+SOURCE HIERARCHY
+Course Outline = authoritative for course information and exact official CLO wording.
+Excel = authoritative for all numerical calculations, student performance, marks, assessment results, assessment-to-CLO mapping and attainment.
+Never invent, estimate, modify or reinterpret values. Never change official CLO wording. Never infer missing maximum marks. Missing information must be reported as “Not available in the provided files.”
+
+REQUIRED OUTPUT
+1. Course Information: code, title, credit hours, program, semester, campus, instructor, description, objectives, official CLOs, CLO/PLO mapping where available.
+2. CLO–Assessment Alignment: CLO, exact official CLO, assessment/question, maximum marks, source.
+3. OBE Analysis: CLO mean attainment, SD, number and percentage ≥70%, overall attainment, assessment performance, strongest/weakest CLO, CLOs above/below benchmark.
+4. Status: ≥80 Strong; 70–79.99 Satisfactory; <70 Needs Improvement.
+5. CLO Attainment Table: CLO | exact CLO description | mean attainment | students ≥70% | status.
+6. Assessment-to-CLO Mapping: CLO | assessment/question | maximum marks | average/mean | attainment % | interpretation. If maximum marks are absent, do not infer attainment %.
+7. Student Performance: N, highest, lowest, mean, median, SD, distribution, benchmark percentage. Avoid unnecessary personal data.
+8. Charts: CLO attainment with 70% line; benchmark achievement; assessment performance. Include titles, axes, percentages where appropriate and figure captions.
+9. Evidence-based OBE interpretation. Do not make unsupported claims about student ability, instructor effectiveness or teaching quality.
+10. CQI Action Plan: specific to each weak CLO and its exact official wording; include issue, action, intervention, follow-up evidence and target.
+11. Dedicated “CLO Alignment with Course Outline” section: CLO | Official CLO | Assessment Evidence | Attainment % | Benchmark Achievement % | Status | CQI Priority.
+12. Formal conclusion for HOD/OBE Committee/QEC/accreditation records.
+13. Executive Summary at the beginning.
+14. Word report with cover page, executive summary, course information, description, objectives, official CLOs, alignment, methodology, attainment, assessment analysis, student analysis, charts, CLO alignment, findings, CQI, conclusion and quality check.
+15. Separate Excel workbook with sheets: OBE Summary; CLO–Assessment Mapping; Assessment Analysis; Student/CLO Data; CQI Action Plan; Chart Data.
+16. Output DOCX, XLSX and three PNG charts.
+17. Validate student count, mappings, marks, means, attainment, benchmark percentages, exact CLO wording, and consistency across tables/charts.
+18. Final quality check: students, overall attainment, strongest/weakest CLO, CLOs ≥70 and <70, assessments, matched CLOs, discrepancies, internal consistency.
+
+If a Course Outline CLO has no Excel evidence, write exactly: “No assessment evidence for this CLO was identified in the provided Excel file.”
+If an Excel assessment CLO cannot be matched to the Course Outline, flag the discrepancy clearly.
