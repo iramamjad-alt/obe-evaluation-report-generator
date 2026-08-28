@@ -9,8 +9,33 @@ from openpyxl.styles import Font,PatternFill,Alignment
 from openpyxl.utils import get_column_letter
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title='OBE Evaluation Report Generator',layout='wide')
+st.set_page_config(page_title='OBE Evaluation Report Generator',page_icon='📊',layout='wide',initial_sidebar_state='expanded')
 BENCHMARK=70.0
+
+# --- Professional dashboard styling ---
+st.markdown("""
+<style>
+.main {background:#f7f9fc;}
+.block-container {padding-top:1.5rem; padding-bottom:2rem;}
+.obe-hero {
+ padding:1.35rem 1.6rem; border-radius:16px; margin-bottom:1.2rem;
+ background:linear-gradient(135deg,#163a5f 0%,#285f8f 100%); color:white;
+}
+.obe-hero h1 {margin:0; font-size:2rem;}
+.obe-hero p {margin:.4rem 0 0; opacity:.95;}
+div[data-testid="stMetric"] {
+ background:white; border:1px solid #dfe6ee; border-radius:12px; padding:10px;
+}
+.stButton>button {border-radius:9px; font-weight:600;}
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+<div class="obe-hero">
+<h1>📊 OBE Evaluation Report Generator</h1>
+<p>Automated, auditable CLO attainment analysis, assessment evidence, CQI planning and accreditation-ready reporting.</p>
+</div>
+""", unsafe_allow_html=True)
+
 
 def clean(v):
     if pd.isna(v): return ''
@@ -131,21 +156,154 @@ def report(info,objectives,clos,assessments,stats,overall,gtot,student_df,chart_
 # Missing import used only for paragraph alignment
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-st.title('OBE Evaluation Report Generator')
-st.write('Upload the official Course Outline and OBE Excel file. The app follows the supplied master prompt and does not invent missing numerical data.')
-benchmark=st.sidebar.number_input('OBE benchmark (%)',0.0,100.0,70.0,1.0); BENCHMARK=benchmark
-outline=st.file_uploader('1. Course Outline (.docx)',type=['docx']); excel=st.file_uploader('2. OBE Assessment Excel (.xlsx)',type=['xlsx'])
+with st.sidebar:
+    st.header("⚙️ OBE Controls")
+    BENCHMARK = st.number_input("OBE benchmark (%)", 0.0, 100.0, 70.0, 1.0)
+    st.divider()
+    st.markdown("### Source hierarchy")
+    st.info("Course Outline → official course information and exact CLO wording.\n\nExcel → numerical OBE evidence, marks, assessment results and mappings.")
+    st.markdown("### Status rules")
+    st.write("**≥80%** — Strong")
+    st.write("**70–79.99%** — Satisfactory")
+    st.write("**<70%** — Needs Improvement")
+
+st.subheader("📁 Upload OBE Evidence")
+c1, c2 = st.columns(2)
+with c1:
+    outline = st.file_uploader("1. Course Outline (.docx)", type=["docx"])
+with c2:
+    excel = st.file_uploader("2. OBE Assessment Excel (.xlsx)", type=["xlsx"])
+
 if outline and excel:
-    info,objectives,clos=parse_outline(outline.getvalue()); raw=pd.read_excel(io.BytesIO(excel.getvalue()),sheet_name='OBE',header=None)
-    st.subheader('Official CLOs'); st.dataframe(pd.DataFrame({'CLO':list(clos),'Official CLO':list(clos.values())}),use_container_width=True)
-    assessments,stats,overall,gtot,rows,pct_cols,total_col=analyze(raw,clos)
-    st.subheader('OBE Results'); st.dataframe(pd.DataFrame([{'CLO':c,'Mean Attainment (%)':stats[c]['mean'],'Students ≥70%':stats[c]['n70'],'Students ≥70% (%)':stats[c]['pct70'],'SD':stats[c]['sd'],'Status':status(stats[c]['mean'])} for c in clos]),use_container_width=True)
-    if st.button('Generate Complete OBE Report Package',type='primary'):
-        out=Path('obe_output'); out.mkdir(exist_ok=True); cp=charts(stats,assessments,out)
-        sdf=pd.DataFrame({'Sr.':range(1,overall['n']+1),'Roll No.':[clean(raw.iloc[r,2]) for r in rows],'Section':[clean(raw.iloc[r,3]) for r in rows]})
-        for c in clos: sdf[c+' Attainment %']=[num(raw.iloc[r,pct_cols[c]]) for r in rows]
-        sdf['Overall Score']=[num(raw.iloc[r,total_col]) for r in rows]
-        x=out/'OBE_Analysis.xlsx'; d=out/'OBE_Evaluation_Report.docx'; workbook(clos,assessments,stats,overall,sdf,x); report(info,objectives,clos,assessments,stats,overall,gtot,sdf,cp,d)
-        st.success('Complete package generated.')
-        for f in [d,x,*cp]:
-            st.download_button(f'Download {f.name}',f.read_bytes(),file_name=f.name)
+    try:
+        info, objectives, clos = parse_outline(outline.getvalue())
+        raw = pd.read_excel(io.BytesIO(excel.getvalue()), sheet_name='OBE', header=None)
+        assessments, stats, overall, gtot, rows, pct_cols, total_col = analyze(raw, clos)
+
+        st.success("✓ Course Outline and OBE Excel successfully loaded.")
+
+        st.subheader("📘 Course Overview")
+        mc = st.columns(5)
+        for col, label, value in [
+            (mc[0],"Course Code",info["Course Code"] or "Not available"),
+            (mc[1],"Course Title",info["Course Title"] or "Not available"),
+            (mc[2],"Program",info["Program"] or "Not available"),
+            (mc[3],"Semester",info["Semester"] or "Not available"),
+            (mc[4],"Students",overall["n"])
+        ]:
+            col.metric(label, value)
+
+        with st.expander("📚 Official CLOs", expanded=True):
+            st.dataframe(pd.DataFrame({"CLO":list(clos),"Official CLO":list(clos.values())}),
+                         use_container_width=True, hide_index=True)
+
+        st.subheader("📊 CLO Attainment Summary")
+        result_df = pd.DataFrame([
+            {"CLO":c,"Official CLO":clos[c],"Mean Attainment (%)":stats[c]["mean"],
+             "Students ≥70%":stats[c]["n70"],"Students ≥70% (%)":stats[c]["pct70"],
+             "SD":stats[c]["sd"],"Status":status(stats[c]["mean"])}
+            for c in clos
+        ])
+        st.dataframe(result_df,use_container_width=True,hide_index=True)
+
+        valid={c:stats[c]["mean"] for c in clos if not pd.isna(stats[c]["mean"])}
+        strongest=max(valid,key=valid.get) if valid else "N/A"
+        weakest=min(valid,key=valid.get) if valid else "N/A"
+        mm=st.columns(5)
+        mm[0].metric("Overall Attainment",f"{gtot:.2f}%" if not pd.isna(gtot) else "N/A")
+        mm[1].metric("Strongest CLO",strongest)
+        mm[2].metric("Weakest CLO",weakest)
+        mm[3].metric("CLOs ≥70%",sum(v>=70 for v in valid.values()))
+        mm[4].metric("CLOs <70%",sum(v<70 for v in valid.values()))
+
+        st.subheader("📈 Visual OBE Evidence")
+        out=Path("obe_output"); out.mkdir(exist_ok=True)
+        cp=charts(stats,assessments,out)
+        ch1,ch2=st.columns(2)
+        with ch1: st.image(str(cp[0]),use_container_width=True)
+        with ch2: st.image(str(cp[1]),use_container_width=True)
+        st.image(str(cp[2]),use_container_width=True)
+
+        st.subheader("📝 Assessment-wise Analysis")
+        adf=pd.DataFrame([
+            {"CLO":a["clo"],"Assessment/Question":a["label"],"Weightage":a["weightage"],
+             "Average/Mean Score":a["average"],
+             "Maximum Marks":"Not available in the provided files.",
+             "Attainment %":"Not available in the provided files.",
+             "Interpretation":"Raw maximum marks are not separately available; normalized attainment is not inferred."}
+            for a in assessments
+        ])
+        st.dataframe(adf,use_container_width=True,hide_index=True)
+
+        st.subheader("👥 Student Performance")
+        sp=st.columns(6)
+        for col,label,value in [
+            (sp[0],"N",overall["n"]),
+            (sp[1],"Highest",f'{overall["highest"]:.2f}'),
+            (sp[2],"Lowest",f'{overall["lowest"]:.2f}'),
+            (sp[3],"Mean",f'{overall["mean"]:.2f}'),
+            (sp[4],"Median",f'{overall["median"]:.2f}'),
+            (sp[5],"SD",f'{overall["sd"]:.2f}')
+        ]: col.metric(label,value)
+        st.write(f"**Overall students meeting the {BENCHMARK:.0f}% benchmark:** {overall['benchmark_pct']:.1f}%")
+
+        st.subheader("🔗 CLO Alignment with Course Outline")
+        align=pd.DataFrame([
+            {"CLO":c,"Official CLO":clos[c],
+             "Assessment Evidence":"; ".join(a["label"] for a in assessments if a["clo"]==c) or
+                 "No assessment evidence for this CLO was identified in the provided Excel file.",
+             "Attainment %":stats[c]["mean"],"Benchmark Achievement %":stats[c]["pct70"],
+             "Status":status(stats[c]["mean"]),
+             "CQI Priority":"High" if not pd.isna(stats[c]["mean"]) and stats[c]["mean"]<70 else "Maintain"}
+            for c in clos
+        ])
+        st.dataframe(align,use_container_width=True,hide_index=True)
+
+        st.subheader("🛠️ CQI Action Plan")
+        cqi=[]
+        for c in clos:
+            if not pd.isna(stats[c]["mean"]) and stats[c]["mean"]<70:
+                cqi.append({"CLO/Area":c,"Identified Issue":f"Mean attainment = {stats[c]['mean']:.2f}%, below 70%.",
+                            "Recommended Action":f"Focus directly on the official CLO: {clos[c]}",
+                            "Teaching/Learning Intervention":"Targeted practice, formative assessment and feedback tied to the CLO.",
+                            "Follow-up Evidence":"Repeat CLO-aligned assessment and compare attainment.",
+                            "Target":"Mean attainment ≥70%."})
+        if cqi: st.dataframe(pd.DataFrame(cqi),use_container_width=True,hide_index=True)
+        else: st.success("No CLO below the 70% benchmark was identified from the available attainment data.")
+
+        st.subheader("📥 Downloadable OBE Outputs")
+        sdf=pd.DataFrame({"Sr.":range(1,overall["n"]+1),
+                          "Roll No.":[clean(raw.iloc[r,2]) for r in rows],
+                          "Section":[clean(raw.iloc[r,3]) for r in rows]})
+        for c in clos: sdf[c+" Attainment %"]=[num(raw.iloc[r,pct_cols[c]]) for r in rows]
+        sdf["Overall Score"]=[num(raw.iloc[r,total_col]) for r in rows]
+        x=out/"OBE_Analysis.xlsx"; d=out/"OBE_Evaluation_Report.docx"
+        workbook(clos,assessments,stats,overall,sdf,x)
+        report(info,objectives,clos,assessments,stats,overall,gtot,sdf,cp,d)
+
+        b1,b2=st.columns(2)
+        with b1: st.download_button("📄 Download Word Report",d.read_bytes(),"OBE_Evaluation_Report.docx",use_container_width=True)
+        with b2: st.download_button("📊 Download Excel Workbook",x.read_bytes(),"OBE_Analysis.xlsx",use_container_width=True)
+        for col,p in zip(st.columns(3),cp):
+            with col:
+                st.download_button(f"Download {p.name}",p.read_bytes(),p.name,mime="image/png",use_container_width=True)
+
+        with st.expander("🔎 Final OBE Quality Check"):
+            matched=sum(1 for c in clos if any(a["clo"]==c for a in assessments))
+            qc=pd.DataFrame([
+                ["Students analyzed",overall["n"]],
+                ["Overall CLO attainment",f"{gtot:.2f}%" if not pd.isna(gtot) else "Not available"],
+                ["Strongest CLO",strongest],["Weakest CLO",weakest],
+                ["CLOs ≥70%",sum(v>=70 for v in valid.values())],
+                ["CLOs <70%",sum(v<70 for v in valid.values())],
+                ["Assessments analyzed",len(assessments)],
+                ["CLOs successfully matched",matched],
+                ["Internal consistency","Yes; dashboard, workbook and report use the same analysis."]
+            ],columns=["Check","Result"])
+            st.dataframe(qc,use_container_width=True,hide_index=True)
+
+    except Exception as e:
+        st.error("The uploaded files could not be processed.")
+        st.exception(e)
+else:
+    st.info("Upload both files above to begin the OBE analysis.")
