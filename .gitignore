@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+*.xlsx
+*.xls
+*.docx
+obe_output/
