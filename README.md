@@ -20,6 +20,4 @@ Course Outline = authoritative source for official course information and CLO wo
 
 Excel file = authoritative source for numerical assessment and student performance data.
 
-## Privacy
 
-Do not upload student-identifiable Excel files to a public GitHub repository.
